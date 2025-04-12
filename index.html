@@ -244,9 +244,9 @@
     <div style="position:absolute; top:100px; left:10px; background: #ffffffbb; padding:8px; font-size:13px; border-radius:4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
       <strong>错误颜色说明：</strong><br/>
       <span style="color:red;">红色</span>：哈希值不匹配<br/>
-      <span style="color:orange;">橙色</span>：与父节点 height 不匹配<br/>
-      <span style="color:steelblue;">蓝色</span>：正常节点<br/>
-      <span style="background:lightyellow;">&nbsp;&nbsp;&nbsp;</span>：作者为 [gym]
+      <span style="color:orange;">橙色</span>：与父区块 height 不匹配<br/>
+      <span style="color:steelblue;">蓝色</span>：正常区块<br/>
+      <span style="background:lightblue;">&nbsp;&nbsp;&nbsp;</span>：作者[gym]的区块
     </div>
     <div class="tooltip"></div>
   </div>
@@ -281,7 +281,7 @@
   <!-- 引入 d3 库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script>
-    // 节点数据（示例数据，可扩展）
+    // 区块数据（可扩展）
     const nodes = [
       { id: 1, owner: "[老罗]", height: "0", originalRecord: "Pre=; Height=0; ->[老罗]:50; Nonce=3244378190", hash: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", pre: "", isVisible:true },
       { id: 2, owner: "[殷梦婵]", height: "1", originalRecord: "Pre=000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b; Height=1; ->[殷梦婵]:50; Nonce=25763354", hash: "00000010e5614a0627794b26ff0b11a5e07ddc3fac27bfd675608519400226b3", pre: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", isVisible:true },
@@ -370,7 +370,7 @@
       { id: 85, owner: "[mjl]", height: "19", originalRecord: "0000000d4209b209b7bfd89e04c7504c87a7bc6d06d158f475a97f2edc0d7500; Height=19; ->[mjl]:50; Nonce=1096956198", hash: "000000025ba8eaad9317e96b10299b50cbd54d1fb8d016e51bbf9de227817ff7", pre: "0000000d4209b209b7bfd89e04c7504c87a7bc6d06d158f475a97f2edc0d7500", error: "记录不以 'Pre=' 开头; 记录没有找到 'Pre' 字段的分隔符", isVisible:true }
   ];
 
-    // 将所有节点按高度分组
+    // 将所有区块按高度分组
     const heightMap = {};
     nodes.forEach(d => {
       const h = parseInt(d.height, 10) || 0;
@@ -379,14 +379,14 @@
     });
     Object.keys(heightMap).forEach(k => { heightMap[k].sort((a, b) => a.id - b.id); });
 
-    // 建立哈希到节点的映射
+    // 建立哈希到区块的映射
     const hashMap = new Map();
     nodes.forEach(n => hashMap.set(n.hash, n));
 
-    // 为每个节点预留子节点数组
+    // 为每个区块预留子区块数组
     nodes.forEach(n => n._childrenData = []);
 
-    // 根据 pre 找父节点；找不到则取前一高度的最后一个节点作为兜底
+    // 根据 pre 找父区块；找不到则取前一高度的最后一个区块作为兜底
     function findParentOrFallback(child) {
       const dad = hashMap.get(child.pre);
       if (dad) return dad;
@@ -464,15 +464,15 @@
     // Tooltip 处理
     const tooltip = d3.select(".tooltip");
 
-    // 分别生成连线组与节点组
+    // 分别生成连线组与区块组
     const gLinks = svg.append("g").attr("class", "linksGroup");
     const gNodes = svg.append("g").attr("class", "nodesGroup");
 
     /**
-     * 节点颜色规则：
+     * 区块颜色规则：
      * - 存在 error：红色
      * - 高度不匹配：橙色
-     * - 其余正常节点：steelblue（连线统一用 #ccc）
+     * - 其余正常区块：steelblue（连线统一用 #ccc）
      */
     function getColor(d, isLink) {
       if (d.error) return "red";
@@ -487,7 +487,7 @@
       const visibleNodes = allNodes.filter(n => n.data.isVisible);
       const visibleLinks = root.links().filter(l => l.source.data.isVisible && l.target.data.isVisible);
       
-      // 清除旧的连线与节点
+      // 清除旧的连线与区块
       gLinks.selectAll("path.link").remove();
       gNodes.selectAll("g.node").remove();
       
@@ -504,7 +504,7 @@
         .attr("stroke", d => getColor(d.target.data, true))
         .attr("d", linkGen);
       
-      // 绘制节点
+      // 绘制区块
       const nodeEnter = gNodes.selectAll("g.node")
         .data(visibleNodes)
         .enter()
@@ -521,7 +521,7 @@
             html += `<div style="color:red;margin-top:4px;">错误: ${nd.error}</div>`;
           }
           if (nd.isHeightError) {
-            html += `<div style="color:orange;">(与父节点 height 不匹配)</div>`;
+            html += `<div style="color:orange;">(与父区块 height 不匹配)</div>`;
           }
           tooltip.style("left", 0)
                  .style("top", 0)
@@ -548,7 +548,7 @@
           showBlockInfo(d);
         });
       
-      // 如果节点所有者为 [gym]，插入背景矩形进行区域高亮显示
+      // 如果区块所有者为 [gym]，插入背景矩形进行区域高亮显示
       nodeEnter.filter(d => d.data.owner === "[gym]")
         .insert("rect", ":first-child")
         .attr("x", -15)
@@ -558,7 +558,7 @@
         .attr("fill", "lightblue")
         .attr("opacity", 0.5);
 
-      // 绘制节点圆圈与文本
+      // 绘制区块圆圈与文本
       nodeEnter.append("circle")
         .attr("r", 5)
         .attr("fill", d => getColor(d.data, false));
@@ -608,7 +608,7 @@
         parentRecordEl.value = parentData.originalRecord;
         parentHashEl.textContent = parentData.hash;
       } else {
-        parentRecordEl.value = "(无父节点)";
+        parentRecordEl.value = "(无父区块)";
         parentHashEl.textContent = "(无)";
       }
       childRecordEl.value = nd.originalRecord;
