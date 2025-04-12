@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>区块链关系梳理</title>
+  <style>
+    /* 全局基础样式 */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Microsoft YaHei", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: linear-gradient(135deg, #f5f7fa 0%, #eef2f3 100%);
+      color: #333;
+      width: 2860px; /* 设置固定宽度 */
+    }
+    /* 页头区域 */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: linear-gradient(90deg, #78c5d6 0%, #c5e6f1 100%);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+      border-radius: 0 0 6px 6px;
+    }
+    #header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #fff;
+      font-weight: normal;
+    }
+    button {
+      padding: 8px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background: #7ec0ee;
+      color: #fff;
+      transition: background 0.3s;
+    }
+    button:hover { background: #62b0e8; }
+    button:active { background: #539fd3; }
+    /* 树状图容器 */
+    #treeContainer {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    svg {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+      display: block;
+      margin: 0 auto;
+    }
+    .link {
+      fill: none;
+      stroke-width: 2.5px;
+    }
+    .node circle {
+      cursor: pointer;
+      stroke: #999;
+      stroke-width: 1px;
+      transition: stroke 0.2s;
+    }
+    .node circle:hover { stroke: #555; }
+    .node text {
+      font-size: 12px;
+      user-select: none;
+      font-family: sans-serif;
+    }
+    .tooltip {
+      position: absolute;
+      visibility: hidden;
+      padding: 8px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      color: #333;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    /* 信息面板区域 */
+    #infoPanel {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 16px;
+      background-color: #fff;
+      font-size: 14px;
+      height: 430px;
+      overflow-y: auto;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+      margin: 10px;
+      margin-top: 0;
+      position: relative; /* 新增：用于内部绝对定位 */
+    }
+    #infoPanel h2 {
+      margin-top: 0;
+      font-size: 16px;
+      color: #333;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+    }
+    .recordBox {
+      width: 100%;
+      height: 30px;
+      resize: none;
+      font-family: monospace;
+      font-size: 13px;
+      box-sizing: border-box;
+      margin: 6px 0;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      padding: 6px;
+      background: #fafafa;
+    }
+    .hashDisplay {
+      margin: 4px 0 12px 0;
+      font-size: 13px;
+      background: #fafafa;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      word-wrap: break-word;
+      word-break: break-all;
+    }
+    /* 手动哈希计算区域 */
+    #manualHashContainer {
+      margin-top: 10px;
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
+      position: relative; /* 保持相对定位 */
+    }
+    #manualInput {
+      width: 100%;
+      height: 30px;
+      resize: none;
+      font-family: monospace;
+      font-size: 13px;
+      box-sizing: border-box;
+      margin-top: 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      padding: 6px;
+      background: #fafafa;
+    }
+    #manualHashResult {
+      margin: 6px 0;
+      font-size: 13px;
+      background: #fafafa;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      word-wrap: break-word;
+      word-break: break-all;
+    }
+    /* 覆盖层用于手动哈希计算区域（如需要） */
+    #manualOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.8);
+      cursor: pointer;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      border-radius: 6px;
+      z-index: 99;
+    }
+    /* 新增：覆盖层用于整个哈希校验面板 */
+    #infoOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6); /* 使用较高不透明度的深色背景 */
+      backdrop-filter: blur(5px);    /* 添加模糊效果 */
+      cursor: pointer;
+      display: none;
+      z-index: 100;
+    }
+    /* 模态框 */
+    #exemptModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #exemptModal .modalContent {
+      background: #fff;
+      padding: 40px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    #exemptModal h3 {
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      color: #d32f2f;
+    }
+    #closeModalBtn {
+      border: none;
+      border-radius: 4px;
+      background: #7ec0ee;
+      color: #fff;
+      cursor: pointer;
+      padding: 8px 16px;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    #closeModalBtn:hover { background: #62b0e8; }
+    #closeModalBtn:active { background: #539fd3; }
+  </style>
+</head>
+<body>
+
+  <!-- 页头区域 -->
+  <div id="header">
+    <h2>区块链关系梳理</h2>
+    <button id="replayBtn">按时序显示区块</button>
+  </div>
+
+  <!-- 树状图区域 -->
+  <div id="treeContainer">
+    <div style="position:absolute; top:100px; left:10px; background: #ffffffbb; padding:8px; font-size:13px; border-radius:4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+      <strong>错误颜色说明：</strong><br/>
+      <span style="color:red;">红色</span>：哈希值不匹配<br/>
+      <span style="color:orange;">橙色</span>：与父节点 height 不匹配<br/>
+      <span style="color:steelblue;">蓝色</span>：正常节点
+    </div>
+    <div class="tooltip"></div>
+  </div>
+
+  <!-- 信息面板区域 -->
+  <div id="infoPanel">
+    <h2>点击图中任一区块进行哈希校验</h2>
+    <!-- 新增：用于遮挡整个信息面板的覆盖层 -->
+    <div id="infoOverlay"></div>
+    <label>父区块完整记录:</label>
+    <textarea id="parentRecord" class="recordBox" readonly></textarea>
+    <label>父区块哈希值:</label>
+    <div id="parentHash" class="hashDisplay">(无)</div>
+    <label>本区块完整记录:</label>
+    <textarea id="childRecord" class="recordBox" readonly></textarea>
+    <!-- 手动哈希计算区域 -->
+    <div id="manualHashContainer">
+      <div id="manualOverlay">
+        <!-- 这里不显示提示文字 -->
+      </div>
+      <label>手动哈希计算 (请粘贴任意文本):</label>
+      <textarea id="manualInput"></textarea>
+      <button id="btnComputeHash">计算哈希</button>
+      <div id="manualHashResult">(无)</div>
+    </div>
+  </div>
+
+  <!-- 模态框 -->
+  <div id="exemptModal">
+    <div class="modalContent">
+      <h3>作者具有校验豁免权，无法被校验</h3>
+      <button id="closeModalBtn">关闭</button>
+    </div>
+  </div>
+
+  <!-- 引入 d3 库 -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+    // 节点数据（完整记录可自行添加，这里仅作示例）
+    const nodes = [
+      { id: 1, owner: "[老罗]", height: "0", originalRecord: "Pre=; Height=0; ->[老罗]:50; Nonce=3244378190", hash: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", pre: "", isVisible:true },
+      { id: 2, owner: "[殷梦婵]", height: "1", originalRecord: "Pre=000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b; Height=1; ->[殷梦婵]:50; Nonce=25763354", hash: "00000010e5614a0627794b26ff0b11a5e07ddc3fac27bfd675608519400226b3", pre: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", isVisible:true },
+      { id: 3, owner: "[gym]", height: "2", originalRecord: "Pre=000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b; Height=2; ->[gym]:50; Nonce=3954701", hash: "0000007194240ef2be6d2940872b96be678636579aa3f90ec170f308fee9fab9", pre: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", isVisible:true },
+      { id: 4, owner: "[周于涵]", height: "2", originalRecord: "Pre=00000010e5614a0627794b26ff0b11a5e07ddc3fac27bfd675608519400226b3; Height=2; ->[周于涵]:50; Nonce=3951708", hash: "0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a", pre: "00000010e5614a0627794b26ff0b11a5e07ddc3fac27bfd675608519400226b3", isVisible:true },
+      { id: 5, owner: "[酱油]", height: "2", originalRecord: "Pre=000000a8b2e3c4d5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0; Height=2; ->[酱油]:50; Nonce=42981765", hash: "299658af894f6ae630983b43316c2ae53381ae8f3949df3ccd234d245e4cfc19", pre: "000000a8b2e3c4d5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0", error: "Pre 字段 000000a8b2e3c4d5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 6, owner: "[王超]", height: "3", originalRecord: "Pre=0000007194240ef2be6d2940872b96be678636579aa3f90ec170f308fee9fab9; Height=3; ->[王超]:50; Nonce=406123905", hash: "00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771", pre: "0000007194240ef2be6d2940872b96be678636579aa3f90ec170f308fee9fab9", isVisible:true },
+      { id: 7, owner: "[叶巧妍]", height: "4", originalRecord: "Pre=00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771; Height=4; ->[叶巧妍]:50; Nonce=8701329", hash: "000000a694b25028845db06143e72f76c235c66fbeb53ca80001da941315ee49", pre: "00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771", isVisible:true },
+      { id: 8, owner: "[郑筱彤]", height: "4", originalRecord: "Pre=00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771; Height=4; ->[郑筱彤]:50; Nonce=29873755", hash: "00000001ab5e8056f830677dd6a4a482f83c0acf420b316c56138907cf4b3c91", pre: "00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771", isVisible:true },
+      { id: 9, owner: "[gym]", height: "3", originalRecord: "Pre=0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a; Height=3; ->[gym]:50; Nonce=33575538", hash: "00000018640fa6f1c0b79a01c753dfc6969a0012c86aeed277a8041aabf40639", pre: "0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a", isVisible:true },
+      { id: 10, owner: "[zxt]", height: "3", originalRecord: "Pre=000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b;Height=3; ->[zxt]:50; Nonce=84102583", hash: "000000123250862819a7a86dd937474e1d69f3d140aea0826d8b622f1a4ad59a", pre: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", isVisible:true },
+      { id: 11, owner: "[gym]", height: "4", originalRecord: "Pre=00000018640fa6f1c0b79a01c753dfc6969a0012c86aeed277a8041aabf40639; Height=4; ->[gym]:50; Nonce=6561502", hash: "0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d", pre: "00000018640fa6f1c0b79a01c753dfc6969a0012c86aeed277a8041aabf40639", isVisible:true },
+      { id: 12, owner: "[江茜]", height: "5", originalRecord: "Pre=0083f86761d51d0fc65956e279824ee3af6d4e026fc56ad2f960e0b3a80d5d9a; Height=5; ->[江茜]:50; Nonce=57606176", hash: "0000003c6ffaaedfa63e5263c6d842f7c7e7e65c3d95640758eb493be1887cd9", pre: "0083f86761d51d0fc65956e279824ee3af6d4e026fc56ad2f960e0b3a80d5d9a", error: "Pre 字段 0083f86761d51d0fc65956e279824ee3af6d4e026fc56ad2f960e0b3a80d5d9a 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 13, owner: "[zxt]", height: "3", originalRecord: "Pre=000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b; Height=3; ->[zxt]:50; Nonce=84102583", hash: "000000123250862819a7a86dd937474e1d69f3d140aea0826d8b622f1a4ad59a", pre: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", isVisible:true },
+      { id: 14, owner: "[王嘉辉]", height: "5", originalRecord: "Pre=00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771; Height=5; ->[王嘉辉]:50; Nonce=88408634", hash: "0000000fa600e8da0896933c320c1e41be6355b7c649392a38ec731812334268", pre: "00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771", isVisible:true },
+      { id: 15, owner: "[岳欣萍]", height: "5", originalRecord: "Pre=000000a694b25028845db06143e72f76c235c66fbeb53ca80001da941315ee49; Height=5; ->[岳欣萍]:50; Nonce=4465104", hash: "000000da55fbe6caf1ff8397b84427ddbd16f8636f7bf59907e71ce8376b567e", pre: "000000a694b25028845db06143e72f76c235c66fbeb53ca80001da941315ee49", isVisible:true },
+      { id: 16, owner: "[hlj]", height: "3", originalRecord: "Pre=000009a2b0df1e3943fae1976f00697811b9a2ee16d22a9df77f912617bf82c3; Height=3; ->[hlj]:50; Nonce=3244390", hash: "e3fc0ba33cc0f7969ba614339d3a07fc19c2cb23e82a755bcde81b74e7858b9d", pre: "000009a2b0df1e3943fae1976f00697811b9a2ee16d22a9df77f912617bf82c3", error: "Pre 字段 000009a2b0df1e3943fae1976f00697811b9a2ee16d22a9df77f912617bf82c3 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 17, owner: "[杨强]", height: "6", originalRecord: "Pre=0000003c6ffaaedfa63e5263c6d842f7c7e7e65c3d95640758eb493be1887cd9; Height=6; ->[杨强]:50; Nonce=16247680", hash: "0000002eb8f7099c0a5f44fc1a392a6a5924220f823a03f399b058e79e9c0962", pre: "0000003c6ffaaedfa63e5263c6d842f7c7e7e65c3d95640758eb493be1887cd9", isVisible:true },
+      { id: 18, owner: "[王超]", height: "5", originalRecord: "Pre=0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d; Height=5; ->[王超]:50; Nonce=491581957", hash: "0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd", pre: "0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d", isVisible:true },
+      { id: 19, owner: "[胡妍]", height: "5", originalRecord: "Pre=00000001ab5e8056f830677dd6a4a482f83c0acf420b316c56138907cf4b3c91; Height=5; ->[胡妍]:50; Nonce=192705338", hash: "0000000862b394a9f42d9af9a2aa67b04c87785d802652a3a1e7a7d0c1e80401", pre: "00000001ab5e8056f830677dd6a4a482f83c0acf420b316c56138907cf4b3c91", isVisible:true },
+      { id: 20, owner: "[gym]", height: "6", originalRecord: "Pre=0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd; Height=6; ->[gym]:50; Nonce=25340979", hash: "00000007557af0b188a69a32a031a2a739a4091e62866c3b5ac7972acf5be05b", pre: "0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd", isVisible:true },
+      { id: 21, owner: "[xmy]", height: "5", originalRecord: "Pre=0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d; Height=5; ->[xmy]:50; Nonce=101040259", hash: "0000000f4e92d3c1653692783ac8c1921a9e1a4984bfa7574a4629598767c93a", pre: "0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d", isVisible:true },
+      { id: 22, owner: "[zxt]", height: "2", originalRecord: "Pre=00000010e5614a0627794b26ff0b11a5e07ddc3fac27bfd675608519400226b3; Height=2; ->[zxt]:50; Nonce=14674180", hash: "d8b4920c2371a27e427d6ca4a60b5fe878432f83411be3eb70a6dc725dbe7f26", pre: "00000010e5614a0627794b26ff0b11a5e07ddc3fac27bfd675608519400226b3", isVisible:true },
+      { id: 23, owner: "[wwh]", height: "6", originalRecord: "Pre=000000024a68510c9534c9ad98562fdab04a81513d1911e9f2d41a8bbd1de7d2; Height=6; ->[wwh]:50; Nonce=12735873", hash: "4901ac60270fd50187ccd9c817e1cfb33810d7b11a5090e11e49a11746868477", pre: "000000024a68510c9534c9ad98562fdab04a81513d1911e9f2d41a8bbd1de7d2", error: "Pre 字段 000000024a68510c9534c9ad98562fdab04a81513d1911e9f2d41a8bbd1de7d2 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 24, owner: "[gym]", height: "7", originalRecord: "Pre=00000007557af0b188a69a32a031a2a739a4091e62866c3b5ac7972acf5be05b; Height=7; ->[gym]:50; Nonce=62441639", hash: "000000053ffaed9168ab07bb69002feb3ed5c374c51dff014abaaeabb2f82b58", pre: "00000007557af0b188a69a32a031a2a739a4091e62866c3b5ac7972acf5be05b", isVisible:true },
+      { id: 25, owner: "[农雅轩]", height: "7", originalRecord: "Pre=0000002eb8f7099c0a5f44fc1a392a6a5924220f823a03f399b058e79e9c0962; Height=7; ->[农雅轩]:50; Nonce=128741165", hash: "0000000a4fccf1f18dc8f19073e82c40d6454472770b66bf606d4559c7ae9d7e", pre: "0000002eb8f7099c0a5f44fc1a392a6a5924220f823a03f399b058e79e9c0962", isVisible:true },
+      { id: 26, owner: "[李冉]", height: "6", originalRecord: "Pre=0000000862b394a9f42d9af9a2aa67b04c87785d802652a3a1e7a7d0c1e80401; Height=6; ->[李冉]:50; Nonce=104802804", hash: "0000000cfed22f4b9874e96ec2a8a2f8bfbcce019ff20d948d3d652b0c204dbd", pre: "0000000862b394a9f42d9af9a2aa67b04c87785d802652a3a1e7a7d0c1e80401", isVisible:true },
+      { id: 27, owner: "[whr]", height: "7", originalRecord: "Pre=0000003c6ffaaedfa63e5263c6d842f7c7e7e65c3d95640758eb493be1887cd9; Height=7; ->[whr]:50; Nonce=8579784", hash: "000000080be9ce173899e08dc0a4a7def5b127dd4cd0b7b20eb132ace90867f4", pre: "0000003c6ffaaedfa63e5263c6d842f7c7e7e65c3d95640758eb493be1887cd9", isVisible:true },
+      { id: 28, owner: "[陈宇轩]", height: "3", originalRecord: "Pre=0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a; Height=3; ->[陈宇轩]:50; Nonce=69183668", hash: "0000001c3f1e34be36f9fff4ac042883b8034ba96ae105cfbb9f9d9263aaec40", pre: "0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a", isVisible:true },
+      { id: 29, owner: "[gym]", height: "8", originalRecord: "Pre=000000053ffaed9168ab07bb69002feb3ed5c374c51dff014abaaeabb2f82b58; Height=8; ->[gym]:50; Nonce=90740315", hash: "0000000b621fec13692c6207c7991ca71823d9058f277f63c5b96e9bec21371c", pre: "000000053ffaed9168ab07bb69002feb3ed5c374c51dff014abaaeabb2f82b58", isVisible:true },
+      { id: 30, owner: "[韩林柯]", height: "3", originalRecord: "Pre=0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a; Height=3; ->[韩林柯]:50; Nonce=17569519", hash: "000000344badee02fc8348af38496104e73232a78d192611f83914306ce243ef", pre: "0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a", isVisible:true },
+      { id: 31, owner: "[xmy]", height: "6", originalRecord: "Pre=0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd; Height=6; ->[xmy]:50; Nonce=122817208", hash: "000000028行為597a04f7e60e8b0835376345b9ed8192023fd14aca24793491aa310", pre: "0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd", isVisible:true },
+      { id: 32, owner: "[杨强]", height: "6", originalRecord: "Pre=0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd; Height=6; ->[杨强]:50; Nonce=310974932", hash: "0000000e4ca9f8a2b976990cf50272189c05f4b8db82f6d314d83030739d4123", pre: "0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd", isVisible:true },
+      { id: 33, owner: "[郑筱彤]", height: "3", originalRecord: "Pre=0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a; Height=3; ->[郑筱彤]:50; Nonce=123928481", hash: "000000181e8d7db5001bb54c4ca2b95f4c3cb3eeb5ac1eff4c4e610f52180a2a", pre: "0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a", isVisible:true },
+      { id: 34, owner: "[蔡思颖]", height: "8", originalRecord: "Pre=0000000a4fccf1f18dc8f19073e82c40d6454472770b66bf606d4559c7ae9d7e; Height=8; ->[蔡思颖]:50; Nonce=364356960", hash: "0000000f7eba8a2758bf6c3b58b0c8f77ad0be59ebb7bcecba65ab5b01469708", pre: "0000000a4fccf1f18dc8f19073e82c40d6454472770b66bf606d4559c7ae9d7e", isVisible:true },
+      { id: 35, owner: "[杨菁]", height: "5", originalRecord: "Pre=000000a694b25028845db06143e72f76c235c66fbeb53ca80001da941315ee49; Height=5; ->[杨菁]:50; Nonce=28354762", hash: "000000120d565d0a8a3eb48f4fae7f6a4a4074c26370c55e7ed0273ced968b38", pre: "000000a694b25028845db06143e72f76c235c66fbeb53ca80001da941315ee49", isVisible:true },
+      { id: 36, owner: "[陈宇轩]", height: "6", originalRecord: "Pre=0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd; Height=6; ->[陈宇轩]:50; Nonce=5968148", hash: "00000002fef7212bff7de30225a8b1ea43ca75a1655fb76b865afe16281589b2", pre: "0000000fcf1392e815b4e500d929e1cb11b890914afd847d633de84d2b3651cd", isVisible:true },
+      { id: 37, owner: "[向笛]", height: "7", originalRecord: "Pre=0000000e4ca9f8a2b976990cf50272189c05f4b8db82f6d314d83030739d4123; Height=7; ->[向笛]:50; Nonce=69464688", hash: "000000034bae2f949a8ecd361054f80f9892cb03238896ea2e0f054ccc7757d6", pre: "0000000e4ca9f8a2b976990cf50272189c05f4b8db82f6d314d83030739d4123", isVisible:true },
+      { id: 38, owner: "[周于涵]", height: "4", originalRecord: "Pre=0000001c3f1e34be36f9fff4ac042883b8034ba96ae105cfbb9f9d9263aaec40; Height=4; ->[周于涵]:50; Nonce=43775690", hash: "0000003e4415706d7dce39c0ab00d7296bd7e6663d1bbe70c4bc5ffecae69c68", pre: "0000001c3f1e34be36f9fff4ac042883b8034ba96ae105cfbb9f9d9263aaec40", isVisible:true },
+      { id: 39, owner: "[gjy]", height: "5", originalRecord: "Pre=00000000b5626e239836497c48e2cc25af4b9aaf46b7413bde8362bc911c13e8; Height=5; ->[gjy]:50; Nonce=32821752", hash: "1759e1b71c07173e451571747ae897c12bb6cfc72251fee06ee4015a9f99f40d", pre: "00000000b5626e239836497c48e2cc25af4b9aaf46b7413bde8362bc911c13e8", error: "Pre 字段 00000000b5626e239836497c48e2cc25af4b9aaf46b7413bde8362bc911c13e8 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 40, owner: "[gym]", height: "9", originalRecord: "Pre=0000000b621fec13692c6207c7991ca71823d9058f277f63c5b96e9bec21371c; Height=9; ->[gym]:50; Nonce=206735170", hash: "00000006c30d11e7abd9bf5b33cf34fdbc80266eac4d769b092faf61dd2fe855", pre: "0000000b621fec13692c6207c7991ca71823d9058f277f63c5b96e9bec21371c", isVisible:true },
+      { id: 41, owner: "[金一涵]", height: "5", originalRecord: "Pre=00000004772af050927ad4f1b38d46b06c30ea9a5abdb7faaf39a3720c77fff7; Height=5; ->[金一涵]:50; Nonce=31872271", hash: "47f579a9a3096e9f59095bc234f917a228d726b1cf458fa11174f5cc57803224", pre: "00000004772af050927ad4f1b38d46b06c30ea9a5abdb7faaf39a3720c77fff7", error: "Pre 字段 00000004772af050927ad4f1b38d46b06c30ea9a5abdb7faaf39a3720c77fff7 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 42, owner: "[陈宇轩]", height: "4", originalRecord: "Pre=0000001c3f1e34be36f9fff4ac042883b8034ba96ae105cfbb9f9d9263aaec40; Height=4; ->[陈宇轩]:50; Nonce=42475281", hash: "0000001abc9231f798a3e5dbcf5bdfe67d2c2b0524c223fff3befddb7b7660e6", pre: "0000001c3f1e34be36f9fff4ac042883b8034ba96ae105cfbb9f9d9263aaec40", isVisible:true },
+      { id: 43, owner: "[陈宝琦]", height: "3", originalRecord: "Pre=0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a; Height=3; ->[陈宝琦]:50; Nonce=169990811", hash: "00000019d47aae262d2a6a644a297fa98eab93214ba3de9b97a7d037b02c2adc", pre: "0000001e940af8decee8faa8a8592a30bac6f26eeafb3c8fcbac422600a7257a", isVisible:true },
+      { id: 44, owner: "[wlx]", height: "1", originalRecord: "Pre=000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b; Height=1; ->[wlx]:50; Nonce=7265868", hash: "0000005fb9042ce86a5220cb00af059133e878f5acfd32d52034aa048eced92c", pre: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", isVisible:true },
+      { id: 45, owner: "[fzy]", height: "2", originalRecord: "Pre=0000005fb9042ce86a5220cb00af059133e878f5acfd32d52034aa048eced92c; Height=2; ->[fzy]:50; Nonce=46786472", hash: "00000061068473d42a22b1731993e47374f2ec346220cd550a13d930efb8351a", pre: "0000005fb9042ce86a5220cb00af059133e878f5acfd32d52034aa048eced92c", isVisible:true },
+      { id: 46, owner: "[wlx]", height: "3", originalRecord: "Pre=00000061068473d42a22b1731993e47374f2ec346220cd550a13d930efb8351a; Height=3; ->[wlx]:50; Nonce=3973923", hash: "00000018fa6d7baa848be6344b77b0ba4ceca7071e65ee32a75c15cb4c8b9252", pre: "00000061068473d42a22b1731993e47374f2ec346220cd550a13d930efb8351a", isVisible:true },
+      { id: 47, owner: "[fzy]", height: "4", originalRecord: "Pre=00000018fa6d7baa848be6344b77b0ba4ceca7071e65ee32a75c15cb4c8b9252; Height=4; ->[fzy]:50; Nonce=26903806", hash: "00000014ce4f9eab4a9bc7d954e67599b339054e25a056da28c7fe4ece884772", pre: "00000018fa6d7baa848be6344b77b0ba4ceca7071e65ee32a75c15cb4c8b9252", isVisible:true },
+      { id: 48, owner: "[gym]", height: "10", originalRecord: "Pre=00000006c30d11e7abd9bf5b33cf34fdbc80266eac4d769b092faf61dd2fe855; Height=10; ->[gym]:50; Nonce=143888458", hash: "00000002b6b9beac10ddf20f46a206ec3e23f785f117fa813aefdf557e9bf99c", pre: "00000006c30d11e7abd9bf5b33cf34fdbc80266eac4d769b092faf61dd2fe855", isVisible:true },
+      { id: 49, owner: "[王泽宇]", height: "4", originalRecord: "Pre=00000019d47aae262d2a6a644a297fa98eab93214ba3de9b97a7d037b02c2adc; Height=4; ->[王泽宇]:50; Nonce=4943467", hash: "000003cb14d893ee81e0cffc696d982d08414eddf5144bc5143e5252ee70f405", pre: "00000019d47aae262d2a6a644a297fa98eab93214ba3de9b97a7d037b02c2adc", isVisible:true },
+      { id: 50, owner: "[wwh]", height: "13", originalRecord: "Pre=0000000547c6ce6176604d6f8a984cb0efd0b91d07d3f9e61a1a70557b13959c; Height=13; ->[wwh]:50; Nonce=55301073", hash: "22544b03d3d30d62908d54a977f072997e4351784c0b9f8dff4539fc19386ab3", pre: "0000000547c6ce6176604d6f8a984cb0efd0b91d07d3f9e61a1a70557b13959c", error: "Pre 字段 0000000547c6ce6176604d6f8a984cb0efd0b91d07d3f9e61a1a70557b13959c 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 51, owner: "[胡妍]", height: "5", originalRecord: "Pre=0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d; Height=5; ->[胡妍]:50; Nonce=188538431", hash: "000000019bae08e49e91a7baed90793ad7486422845e626efa7fed560209be89", pre: "0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d", isVisible:true },
+      { id: 52, owner: "[杨菁]", height: "6", originalRecord: "Pre=000000120d565d0a8a3eb48f4fae7f6a4a4074c26370c55e7ed0273ced968b38; Height=6; ->[杨菁]:50; Nonce=22088220", hash: "000000086c06906692a2cf157ef65814c6a53239db6437efb7496c3232ee52bc", pre: "000000120d565d0a8a3eb48f4fae7f6a4a4074c26370c55e7ed0273ced968b38", isVisible:true },
+      { id: 53, owner: "[wlx]", height: "5", originalRecord: "Pre=00000014ce4f9eab4a9bc7d954e67599b339054e25a056da28c7fe4ece884772; Height=5; ->[wlx]:50; Nonce=89303077", hash: "0000000f7f4d10a9b3742945ecec275e94242dbf0d0979ec05a41cf842ce6439", pre: "00000014ce4f9eab4a9bc7d954e67599b339054e25a056da28c7fe4ece884772", isVisible:true },
+      { id: 54, owner: "[gym]", height: "11", originalRecord: "Pre=00000002b6b9beac10ddf20f46a206ec3e23f785f117fa813aefdf557e9bf99c; Height=11; ->[gym]:50; Nonce=170215192", hash: "0000000a92193237ed4b3001e2eaa59425800925b738fa3c3eeb6242756a4cb8", pre: "00000002b6b9beac10ddf20f46a206ec3e23f785f117fa813aefdf557e9bf99c", isVisible:true },
+      { id: 55, owner: "[陈宇轩]", height: "5", originalRecord: "Pre=0000001abc9231f798a3e5dbcf5bdfe67d2c2b0524c223fff3befddb7b7660e6; Height=5; ->[陈宇轩]:50; Nonce=291041464", hash: "0000000cac3bf19ad998a31ca5b27cadd7989de0eccdb7dfa9f74591cb9df3ca", pre: "0000001abc9231f798a3e5dbcf5bdfe67d2c2b0524c223fff3befddb7b7660e6", isVisible:true },
+      { id: 56, owner: "[刘奕菲]", height: "7", originalRecord: "Pre=000000086c06906692a2cf157ef65814c6a53239db6437efb7496c3232ee52bc; Height=7; ->[刘奕菲]:50; Nonce=280654", hash: "0000070428a6ef127149ee28b07c6981debcbf774257c5a68e1d8d067b639527", pre: "000000086c06906692a2cf157ef65814c6a53239db6437efb7496c3232ee52bc", isVisible:true },
+      { id: 57, owner: "[HYX]", height: "3", originalRecord: "Pre=0000001dbd5e6581a355fab8c11a3d50dfd5a8d1bc42e9a4263feb490a9f4110; Height=3; ->[HYX]:50; Nonce=274850884", hash: "000000266b465902b3435a31b08bae1e26da4a7c55582b48cc015633a080b1a2", pre: "0000001dbd5e6581a355fab8c11a3d50dfd5a8d1bc42e9a4263feb490a9f4110", error: "Pre 字段 0000001dbd5e6581a355fab8c11a3d50dfd5a8d1bc42e9a4263feb490a9f4110 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 58, owner: "[王煜樟]", height: "5", originalRecord: "Pre=00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771; Height=5; ->[王煜樟]:50; Nonce=22214517", hash: "00000027812664582b0cc7143c3590f3d9114417a67d68fa3ba5059ca522d715", pre: "00000011b4e191f62a9a895a703870d89728ebc2f27449d1f8c1026a4a4e5771", isVisible:true },
+      { id: 59, owner: "[江茜]", height: "5", originalRecord: "Pre=0000001c3f1e34be36f9fff4ac042883b8034ba96ae105cfbb9f9d9263aaec40; Height=5; ->[江茜]:50; Nonce=416289171", hash: "0000000dc7a13dace233998221cecde9974437abae75a898c760d8d7a3cde220", pre: "0000001c3f1e34be36f9fff4ac042883b8034ba96ae105cfbb9f9d9263aaec40", isVisible:true },
+      { id: 60, owner: "[高雯琪]", height: "6", originalRecord: "Pre=0000000cac3bf19ad998a31ca5b27cadd7989de0eccdb7dfa9f74591cb9df3ca; Height=6; ->[高雯琪]:50; Nonce=324942619", hash: "000000065a945097d25de7b655fd2742a7b932252b00013986298c06206fd474", pre: "0000000cac3bf19ad998a31ca5b27cadd7989de0eccdb7dfa9f74591cb9df3ca", isVisible:true },
+      { id: 61, owner: "[韩恒骏]", height: "8", originalRecord: "Pre=000000034bae2f949a8ecd361054f80f9892cb03238896ea2e0f054ccc7757d6; Height=8; ->[韩恒骏]:50; Nonce=443803080", hash: "0000000cf1cf8effd079b21eb672df0f38cb4405fe09354830f5f8dd8bd007a1", pre: "000000034bae2f949a8ecd361054f80f9892cb03238896ea2e0f054ccc7757d6", isVisible:true },
+      { id: 62, owner: "[傅子珂]", height: "5", originalRecord: "Pre=0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d; Height=5; ->[傅子珂]:50; Nonce=271867679", hash: "0000000e79e22a26af0d1b56e4a7a9e33c3ca6e9b9d6f730ef0ec6a711fbb847", pre: "0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d", isVisible:true },
+      { id: 63, owner: "[fzy]", height: "6", originalRecord: "Pre=0000000f7f4d10a9b3742945ecec275e94242dbf0d0979ec05a41cf842ce6439; Height=6; ->[fzy]:50; Nonce=159737184", hash: "0000000b8eb6dffbf4d6b515187acaabc6117418d753664a336632fe65562ae3", pre: "0000000f7f4d10a9b3742945ecec275e94242dbf0d0979ec05a41cf842ce6439", isVisible:true },
+      { id: 64, owner: "[周星彤]", height: "11", originalRecord: "Pre=00000002b6b9beac10ddf20f46a206ec3e23f785f117fa813aefdf557e9bf99c; Height=11; ->[周星彤]:50; Nonce=163650551", hash: "0000000686464d6b0638a17cea0e7634bb59e2f0b18f4bc5569d71848d9b78bc", pre: "00000002b6b9beac10ddf20f46a206ec3e23f785f117fa813aefdf557e9bf99c", isVisible:true },
+      { id: 65, owner: "[占亦璟]", height: "8", originalRecord: "Pre=000000034bae2f949a8ecd361054f80f9892cb03238896ea2e0f054ccc7757d6; Height=8; ->[占亦璟]:50; Nonce=2591794", hash: "0000000b26e53f6c490fb5b06b517ae4c5add7ca1a38288b5351327eab49df7a", pre: "000000034bae2f949a8ecd361054f80f9892cb03238896ea2e0f054ccc7757d6", isVisible:true },
+      { id: 66, owner: "[王杰]", height: "6", originalRecord: "Pre=0000000117c3c771585753d34614c47b3d8a6b6b48127b51821039bc590c2507; Height=6; ->[王杰]:50; Nonce=44088375", hash: "5a797b96d3fe5dad8a768d185e6501cc6e9bef9c5956ee4de05aa9e9522bf23a", pre: "0000000117c3c771585753d34614c47b3d8a6b6b48127b51821039bc590c2507", error: "Pre 字段 0000000117c3c771585753d34614c47b3d8a6b6b48127b51821039bc590c2507 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 67, owner: "[占亦璟]", height: "12", originalRecord: "Pre=0000000686464d6b0638a17cea0e7634bb59e2f0b18f4bc5569d71848d9b78bc; Height=12; ->[占亦璟]:50; Nonce=338545436", hash: "0000000f7e38111046461721450fb637d1247e4e50e76ee8316d040b0430285f", pre: "0000000686464d6b0638a17cea0e7634bb59e2f0b18f4bc5569d71848d9b78bc", isVisible:true },
+      { id: 68, owner: "[吴泓珲]", height: "9", originalRecord: "Pre=0000000b26e53f6c490fb5b06b517ae4c5add7ca1a38288b5351327eab49df7a; Height=9; ->[吴泓珲]:50; Nonce=253913879", hash: "0000000f5d8ec966ba9fe3de473e920fd8181bbaf0a0e6b08689ab6b8fd3192a", pre: "0000000b26e53f6c490fb5b06b517ae4c5add7ca1a38288b5351327eab49df7a", isVisible:true },
+      { id: 69, owner: "[wlx]", height: "7", originalRecord: "Pre=0000000b8eb6dffbf4d6b515187acaabc6117418d753664a336632fe65562ae3; Height=7; ->[wlx]:50; Nonce=982883821", hash: "0000000f934469dfc62a15dfdee76e8760cade0676dfe15dc26c1c5b6811a20f", pre: "0000000b8eb6dffbf4d6b515187acaabc6117418d753664a336632fe65562ae3", isVisible:true },
+      { id: 70, owner: "[马瑶婷]", height: "12", originalRecord: "Pre=0000000686464d6b0638a17cea0e7634bb59e2f0b18f4bc5569d71848d9b78bc; Height=12; ->[马瑶婷]:50; Nonce=435930450", hash: "000000038fe5c09cf20bc7ee2d4e97ac7942ab296c9fff5f15108d7a16bad3a0", pre: "0000000686464d6b0638a17cea0e7634bb59e2f0b18f4bc5569d71848d9b78bc", isVisible:true },
+      { id: 71, owner: "[csy]", height: "13", originalRecord: "Pre=0000000f7e38111046461721450fb637d1247e4e50e76ee8316d040b0430285f; Height=13; ->[csy]:50; Nonce=3793830", hash: "00000009597a06ebaa42a679035d374c33789616419ee5db2b15ec59e84177f9", pre: "0000000f7e38111046461721450fb637d1247e4e50e76ee8316d040b0430285f", isVisible:true },
+      { id: 72, owner: "[占亦璟]", height: "10", originalRecord: "Pre=0000000f5d8ec966ba9fe3de473e920fd8181bbaf0a0e6b08689ab6b8fd3192a; Height=10; ->[占亦璟]:50; Nonce=37448989", hash: "0000000ef8e02e0f58bcdf173865a36b534aaea8d276bc2d3adcfe1697d3362d", pre: "0000000f5d8ec966ba9fe3de473e920fd8181bbaf0a0e6b08689ab6b8fd3192a", isVisible:true },
+      { id: 73, owner: "[占亦璟]", height: "14", originalRecord: "Pre=00000009597a06ebaa42a679035d374c33789616419ee5db2b15ec59e84177f9; Height=14; ->[占亦璟]:50; Nonce=67669296", hash: "0000000cf755ef485add546f12db4882697cafe0539690f5b495daa15a1cbbe5", pre: "00000009597a06ebaa42a679035d374c33789616419ee5db2b15ec59e84177f9", isVisible:true },
+      { id: 74, owner: "[江茜]", height: "5", originalRecord: "Pre=0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d; Height=5; ->[江茜]:50; Nonce=320006097", hash: "00000005cc25895266a7ff87c1b2705a883af23e21aee6bc5d8d1577318569c0", pre: "0000002316e34143963647f8b70dc0606c83e9787ff1cee691c97013c8d5032d", isVisible:true },
+      { id: 75, owner: "[雷雨婷]", height: "13", originalRecord: "Pre=000000038fe5c09cf20bc7ee2d4e97ac7942ab296c9fff5f15108d7a16bad3a0; Height=13; ->[雷雨婷]:50; Nonce=361684851", hash: "0000000c5d5fb0958f2ff6380982724db592506d104193deba42bbf005ac98cb", pre: "000000038fe5c09cf20bc7ee2d4e97ac7942ab296c9fff5f15108d7a16bad3a0", isVisible:true },
+      { id: 76, owner: "[王一灵]", height: "14", originalRecord: "Pre=0000000c5d5fb0958f2ff6380982724db592506d104193deba42bbf005ac98cb; Height=14; ->[王一灵]:50; Nonce=87588671", hash: "0000000a7e4d4613113bc5664195ae97e34bf66c77a3dfe3521d07889f09f431", pre: "0000000c5d5fb0958f2ff6380982724db592506d104193deba42bbf005ac98cb", isVisible:true },
+      { id: 77, owner: "[胡妍]", height: "6", originalRecord: "Pre=c3db11b8bbbcc353ed8c1ba1498aecb1e82b644bbfdcae4d0546b615eb2c4586; Height=6; ->[胡妍]:50; Nonce=188769047", hash: "0000000fb26589d071ab6126f66f09caf751914d4a187d515a935fc574999e28", pre: "c3db11b8bbbcc353ed8c1ba1498aecb1e82b644bbfdcae4d0546b615eb2c4586", error: "Pre 字段 c3db11b8bbbcc353ed8c1ba1498aecb1e82b644bbfdcae4d0546b615eb2c4586 不匹配任何记录的计算哈希值", isVisible:true },
+      { id: 78, owner: "[韩林柯]", height: "4", originalRecord: "Pre=000000344badee02fc8348af38496104e73232a78d192611f83914306ce243ef; Height=4; ->[韩林柯]:50; Nonce=89258906", hash: "0000001ccbf503c438315de3176b9d81f28b50fa0ca4fc20ec987767e3aa2789", pre: "000000344badee02fc8348af38496104e73232a78d192611f83914306ce243ef", isVisible:true },
+      { id: 79, owner: "[qyy]", height: "15", originalRecord: "Pre=0000000cf755ef485add546f12db4882697cafe0539690f5b495daa15a1cbbe5; Height=15; ->[qyy]:50; Nonce=147571971", hash: "00000004c1be20011f8f849ff17e57de1b301bb3184fa4f844d57e8835350f09", pre: "0000000cf755ef485add546f12db4882697cafe0539690f5b495daa15a1cbbe5", isVisible:true },
+      { id: 80, owner: "[胡妍]", height: "7", originalRecord: "Pre=0000000fb26589d071ab6126f66f09caf751914d4a187d515a935fc574999e28; Height=7; ->[胡妍]:50; Nonce=318533391", hash: "00000007ba202b91d78a2b05860f788a1dfc946291ed741a606e7178f780f69c", pre: "0000000fb26589d071ab6126f66f09caf751914d4a187d515a935fc574999e28", isVisible:true },
+      { id: 81, owner: "[江茜]", height: "15", originalRecord: "Pre=0000000cf755ef485add546f12db4882697cafe0539690f5b495daa15a1cbbe5; Height=15; ->[江茜]:50; Nonce=457147953", hash: "00000003c6f22dc7a428e4b3666ced244c4ec1bf8355560eb1951ac30f9686b7", pre: "0000000cf755ef485add546f12db4882697cafe0539690f5b495daa15a1cbbe5", isVisible:true },
+      { id: 82, owner: "[qyy]", height: "16", originalRecord: "Pre=00000004c1be20011f8f849ff17e57de1b301bb3184fa4f844d57e8835350f09; Height=16; ->[qyy]:50; Nonce=12190848", hash: "0000000251bfe2c5e8d6acefbd72cb9cd08ac3343634cdcf3fb99b57cba0f178", pre: "00000004c1be20011f8f849ff17e57de1b301bb3184fa4f844d57e8835350f09", isVisible:true },
+      { id: 83, owner: "[刘喆琦]", height: "17", originalRecord: "Pre=0000000251bfe2c5e8d6acefbd72cb9cd08ac3343634cdcf3fb99b57cba0f178; Height=17; ->[刘喆琦]:50; Nonce=63957560", hash: "0000000386cc50f29db77d48757381a981f549e6e82ee805d9754268bb7756c9", pre: "0000000251bfe2c5e8d6acefbd72cb9cd08ac3343634cdcf3fb99b57cba0f178", isVisible:true },
+      { id: 84, owner: "[曹嘉毅]", height: "18", originalRecord: "0000000386cc50f29db77d48757381a981f549e6e82ee805d9754268bb7756c9; Height=18; ->[曹嘉毅]:50; Nonce=375247838", hash: "0000000d4209b209b7bfd89e04c7504c87a7bc6d06d158f475a97f2edc0d7500", pre: "0000000386cc50f29db77d48757381a981f549e6e82ee805d9754268bb7756c9", error: "记录不以 'Pre=' 开头; 记录没有找到 'Pre' 字段的分隔符", isVisible:true },
+      { id: 85, owner: "[mjl]", height: "19", originalRecord: "0000000d4209b209b7bfd89e04c7504c87a7bc6d06d158f475a97f2edc0d7500; Height=19; ->[mjl]:50; Nonce=1096956198", hash: "000000025ba8eaad9317e96b10299b50cbd54d1fb8d016e51bbf9de227817ff7", pre: "0000000d4209b209b7bfd89e04c7504c87a7bc6d06d158f475a97f2edc0d7500", error: "记录不以 'Pre=' 开头; 记录没有找到 'Pre' 字段的分隔符", isVisible:true }
+  ];
+
+    // 构建树状结构相关代码
+    const heightMap = {};
+    nodes.forEach(d => {
+      const h = parseInt(d.height, 10) || 0;
+      if (!heightMap[h]) heightMap[h] = [];
+      heightMap[h].push(d);
+    });
+    Object.keys(heightMap).forEach(k => { heightMap[k].sort((a, b) => a.id - b.id); });
+    const hashMap = new Map();
+    nodes.forEach(n => hashMap.set(n.hash, n));
+    nodes.forEach(n => n._childrenData = []);
+    function findParentOrFallback(child) {
+      const dad = hashMap.get(child.pre);
+      if (dad) return dad;
+      const h = parseInt(child.height, 10);
+      const arr = heightMap[h - 1];
+      if (!arr || arr.length === 0) return null;
+      return arr[arr.length - 1];
+    }
+    const rootData = nodes.find(d => d.owner === "[老罗]");
+    nodes.filter(d => d !== rootData).forEach(child => {
+      const p = findParentOrFallback(child);
+      if (p) {
+        p._childrenData.push(child);
+        if (parseInt(child.height, 10) !== parseInt(p.height, 10) + 1) {
+          child.isHeightError = true;
+        }
+      } else {
+        child.isHeightError = true;
+      }
+    });
+    function buildTreeData(node) {
+      node._childrenData.forEach(ch => {
+        ch._childrenData = buildTreeData(ch)._childrenData;
+      });
+      return node;
+    }
+    const fullTree = buildTreeData(rootData);
+    const root = d3.hierarchy(fullTree, d => d._childrenData);
+    d3.tree().size([800, 800])(root);
+    const COL_WIDTH = 140;
+    root.each(n => {
+      const h = parseInt(n.data.height, 10) || 0;
+      n.y = h * COL_WIDTH;
+    });
+    const allNodesArr = [];
+    root.each(n => allNodesArr.push(n));
+    const xMin = d3.min(allNodesArr, d => d.x);
+    const xMax = d3.max(allNodesArr, d => d.x);
+    const yMin = d3.min(allNodesArr, d => d.y);
+    const yMax = d3.max(allNodesArr, d => d.y);
+    const marginLeft = 200, marginRight = 200, marginTop = 100, marginBottom = 100;
+    let svgWidth = (yMax + marginRight + 100);
+    let svgHeight = (xMax - xMin + marginTop + marginBottom + 50);
+    if (svgWidth < 1200) svgWidth = 1200;
+    if (svgHeight < 800) svgHeight = 800;
+    const svg = d3.select("#treeContainer")
+      .append("svg")
+      .attr("width", svgWidth)
+      .attr("height", svgHeight);
+    svg.append("text")
+      .attr("x", 10)
+      .attr("y", 20)
+      .style("font-size", "14px")
+      .text("总节点数: " + nodes.length);
+    Object.keys(heightMap).map(Number).sort((a, b) => a - b).forEach(col => {
+      svg.append("text")
+        .attr("x", col * COL_WIDTH + 100)
+        .attr("y", 40)
+        .style("font-size", "14px")
+        .text("Height= " + col);
+    });
+    const tooltip = d3.select(".tooltip");
+    const gLinks = svg.append("g").attr("class", "linksGroup");
+    const gNodes = svg.append("g").attr("class", "nodesGroup");
+    function updateGraph() {
+      const allNodes = [];
+      root.each(n => allNodes.push(n));
+      const visibleNodes = allNodes.filter(n => n.data.isVisible);
+      const visibleLinks = root.links().filter(l => l.source.data.isVisible && l.target.data.isVisible);
+      gLinks.selectAll("path.link").remove();
+      gNodes.selectAll("g.node").remove();
+      const linkGen = d3.linkHorizontal()
+        .x(d => d.y)
+        .y(d => d.x);
+      gLinks.selectAll("path.link")
+        .data(visibleLinks)
+        .enter()
+        .append("path")
+        .attr("class", "link")
+        .attr("transform", "translate(100,50)")
+        .attr("stroke", d => getColor(d.target.data, true))
+        .attr("d", linkGen);
+      const nodeEnter = gNodes.selectAll("g.node")
+        .data(visibleNodes)
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.y+100},${d.x+50})`)
+        .on("mousemove", (e, d) => {
+          const nd = d.data;
+          let html = `<div><strong>所有者:</strong> ${nd.owner}</div>
+                      <div><strong>Height:</strong> ${nd.height}</div>
+                      <div><strong>Hash:</strong> ${nd.hash}</div>
+                      <div><strong>Pre:</strong> ${nd.pre}</div>`;
+          if (nd.error) {
+            html += `<div style="color:red;margin-top:4px;">错误: ${nd.error}</div>`;
+          }
+          if (nd.isHeightError) {
+            html += `<div style="color:orange;">(与父节点 height 不匹配)</div>`;
+          }
+          // 先将 tooltip 暂时置于(0,0)以测量尺寸
+          tooltip.style("left", 0)
+                 .style("top", 0)
+                 .style("visibility", "visible")
+                 .html(html);
+          const tooltipNode = tooltip.node();
+          const tooltipRect = tooltipNode.getBoundingClientRect();
+          const tipWidth = tooltipRect.width;
+          const tipHeight = tooltipRect.height;
+          
+          // 默认偏移 10px
+          let left = e.pageX + 10;
+          let top = e.pageY + 10;
+          // 若超出右边界，则向左偏移
+          if (left + tipWidth > window.innerWidth) {
+            left = e.pageX - tipWidth - 10;
+          }
+          // 若超出下边界，则向上偏移
+          if (top + tipHeight > window.innerHeight) {
+            top = e.pageY - tipHeight - 10;
+          }
+          tooltip.style("left", left + "px")
+                 .style("top", top + "px");
+        })
+        .on("mouseleave", () => {
+          tooltip.style("visibility", "hidden");
+        })
+        .on("click", (e, d) => {
+          showBlockInfo(d);
+        });
+      nodeEnter.append("circle")
+        .attr("r", 5)
+        .attr("fill", d => getColor(d.data, false));
+      nodeEnter.append("text")
+        .attr("dx", 10)
+        .attr("dy", 3)
+        .style("text-anchor", "start")
+        .text(d => d.data.owner);
+    }
+    function getColor(d, isLink) {
+      if (d.error) return "red";
+      if (d.isHeightError) return "orange";
+      return isLink ? "#ccc" : "steelblue";
+    }
+    const revealOrder = nodes.map(d => d.id).sort((a, b) => a - b);
+    const INTERVAL_MS = 200;
+    function replaySequence() {
+      nodes.forEach(d => d.isVisible = false);
+      updateGraph();
+      let delay = 0;
+      revealOrder.forEach(id => {
+        setTimeout(() => {
+          const nd = nodes.find(x => x.id === id);
+          if (nd) {
+            nd.isVisible = true;
+            updateGraph();
+          }
+        }, delay);
+        delay += INTERVAL_MS;
+      });
+    }
+    document.getElementById("replayBtn").addEventListener("click", replaySequence);
+    
+    // 信息面板 & 校验豁免逻辑
+    const parentRecordEl  = document.getElementById("parentRecord");
+    const parentHashEl    = document.getElementById("parentHash");
+    const childRecordEl   = document.getElementById("childRecord");
+    const manualOverlayEl = document.getElementById("manualOverlay");
+    const infoOverlayEl   = document.getElementById("infoOverlay");
+    const exemptModalEl   = document.getElementById("exemptModal");
+    const closeModalBtn   = document.getElementById("closeModalBtn");
+    closeModalBtn.addEventListener("click", () => {
+      exemptModalEl.style.display = "none";
+    });
+    
+    /** 用户点击某个节点时，显示区块信息并判断是否触发豁免处理 */
+    function showBlockInfo(nodeDatum) {
+      const nd = nodeDatum.data;
+      const parentData = nodeDatum.parent ? nodeDatum.parent.data : null;
+      // 显示父区块信息
+      if (parentData) {
+        parentRecordEl.value = parentData.originalRecord;
+        parentHashEl.textContent = parentData.hash;
+      } else {
+        parentRecordEl.value = "(无父节点)";
+        parentHashEl.textContent = "(无)";
+      }
+      // 显示当前区块信息
+      childRecordEl.value = nd.originalRecord;
+      // 恢复手动哈希计算区域遮罩（防止之前被遮挡）
+      manualOverlayEl.style.display = "none";
+      manualOverlayEl.innerHTML = `<span>点击此处查看哈希区</span>`;
+      manualOverlayEl.style.pointerEvents = "auto";
+      
+      // 恢复整体信息面板的遮罩
+      infoOverlayEl.style.display = "none";
+      
+      // 如果当前区块为 [gym] 且无 error，则显示豁免模态并覆盖整个信息面板
+      if (nd.owner === "[gym]" && !nd.error) {
+        exemptModalEl.style.display = "flex";
+        infoOverlayEl.style.display = "block";
+        infoOverlayEl.innerHTML = "";
+      }
+    }
+    
+    // 点击 infoOverlay 可解除对整个信息面板的遮挡
+    infoOverlayEl.addEventListener("click", () => {
+      infoOverlayEl.style.display = "none";
+    });
+    
+    // 点击手动遮罩解除手动哈希计算区的遮挡
+    manualOverlayEl.addEventListener("click", () => {
+      manualOverlayEl.style.display = "none";
+    });
+    
+    // 手动哈希计算功能
+    document.getElementById("btnComputeHash").addEventListener("click", async () => {
+      const txt = document.getElementById("manualInput").value;
+      if (!txt.trim()) {
+        document.getElementById("manualHashResult").textContent = "(无输入)";
+        return;
+      }
+      const h = await computeSHA256(txt);
+      document.getElementById("manualHashResult").textContent = h;
+    });
+    async function computeSHA256(str) {
+      const msgBuffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+      return hashHex;
+    }
+    
+    // 初次加载时显示图形
+    updateGraph();
+  </script>
+</body>
+</html>
