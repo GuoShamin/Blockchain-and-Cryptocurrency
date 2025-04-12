@@ -101,7 +101,7 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.15);
       margin: 10px;
       margin-top: 0;
-      position: relative; /* 新增：用于内部绝对定位 */
+      position: relative;
     }
     #infoPanel h2 {
       margin-top: 0;
@@ -138,7 +138,7 @@
       margin-top: 10px;
       border-top: 1px solid #ddd;
       padding-top: 8px;
-      position: relative; /* 保持相对定位 */
+      position: relative;
     }
     #manualInput {
       width: 100%;
@@ -163,7 +163,7 @@
       word-wrap: break-word;
       word-break: break-all;
     }
-    /* 覆盖层用于手动哈希计算区域（如需要） */
+    /* 覆盖层用于手动哈希计算区域 */
     #manualOverlay {
       position: absolute;
       top: 0;
@@ -179,15 +179,15 @@
       border-radius: 6px;
       z-index: 99;
     }
-    /* 新增：覆盖层用于整个哈希校验面板 */
+    /* 覆盖层用于整个哈希校验面板 */
     #infoOverlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.6); /* 使用较高不透明度的深色背景 */
-      backdrop-filter: blur(5px);    /* 添加模糊效果 */
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
       cursor: pointer;
       display: none;
       z-index: 100;
@@ -245,7 +245,8 @@
       <strong>错误颜色说明：</strong><br/>
       <span style="color:red;">红色</span>：哈希值不匹配<br/>
       <span style="color:orange;">橙色</span>：与父节点 height 不匹配<br/>
-      <span style="color:steelblue;">蓝色</span>：正常节点
+      <span style="color:steelblue;">蓝色</span>：正常节点<br/>
+      <span style="background:lightyellow;">&nbsp;&nbsp;&nbsp;</span>：作者为 [gym]
     </div>
     <div class="tooltip"></div>
   </div>
@@ -253,7 +254,6 @@
   <!-- 信息面板区域 -->
   <div id="infoPanel">
     <h2>点击图中任一区块进行哈希校验</h2>
-    <!-- 新增：用于遮挡整个信息面板的覆盖层 -->
     <div id="infoOverlay"></div>
     <label>父区块完整记录:</label>
     <textarea id="parentRecord" class="recordBox" readonly></textarea>
@@ -261,11 +261,8 @@
     <div id="parentHash" class="hashDisplay">(无)</div>
     <label>本区块完整记录:</label>
     <textarea id="childRecord" class="recordBox" readonly></textarea>
-    <!-- 手动哈希计算区域 -->
     <div id="manualHashContainer">
-      <div id="manualOverlay">
-        <!-- 这里不显示提示文字 -->
-      </div>
+      <div id="manualOverlay"></div>
       <label>手动哈希计算 (请粘贴任意文本):</label>
       <textarea id="manualInput"></textarea>
       <button id="btnComputeHash">计算哈希</button>
@@ -284,7 +281,7 @@
   <!-- 引入 d3 库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script>
-    // 节点数据（完整记录可自行添加，这里仅作示例）
+    // 节点数据（示例数据，可扩展）
     const nodes = [
       { id: 1, owner: "[老罗]", height: "0", originalRecord: "Pre=; Height=0; ->[老罗]:50; Nonce=3244378190", hash: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", pre: "", isVisible:true },
       { id: 2, owner: "[殷梦婵]", height: "1", originalRecord: "Pre=000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b; Height=1; ->[殷梦婵]:50; Nonce=25763354", hash: "00000010e5614a0627794b26ff0b11a5e07ddc3fac27bfd675608519400226b3", pre: "000000038dd0552f4dfd679f490a9c957d1141f9afcf6225706170ec6ad4436b", isVisible:true },
@@ -373,7 +370,7 @@
       { id: 85, owner: "[mjl]", height: "19", originalRecord: "0000000d4209b209b7bfd89e04c7504c87a7bc6d06d158f475a97f2edc0d7500; Height=19; ->[mjl]:50; Nonce=1096956198", hash: "000000025ba8eaad9317e96b10299b50cbd54d1fb8d016e51bbf9de227817ff7", pre: "0000000d4209b209b7bfd89e04c7504c87a7bc6d06d158f475a97f2edc0d7500", error: "记录不以 'Pre=' 开头; 记录没有找到 'Pre' 字段的分隔符", isVisible:true }
   ];
 
-    // 构建树状结构相关代码
+    // 将所有节点按高度分组
     const heightMap = {};
     nodes.forEach(d => {
       const h = parseInt(d.height, 10) || 0;
@@ -381,9 +378,15 @@
       heightMap[h].push(d);
     });
     Object.keys(heightMap).forEach(k => { heightMap[k].sort((a, b) => a.id - b.id); });
+
+    // 建立哈希到节点的映射
     const hashMap = new Map();
     nodes.forEach(n => hashMap.set(n.hash, n));
+
+    // 为每个节点预留子节点数组
     nodes.forEach(n => n._childrenData = []);
+
+    // 根据 pre 找父节点；找不到则取前一高度的最后一个节点作为兜底
     function findParentOrFallback(child) {
       const dad = hashMap.get(child.pre);
       if (dad) return dad;
@@ -392,6 +395,7 @@
       if (!arr || arr.length === 0) return null;
       return arr[arr.length - 1];
     }
+
     const rootData = nodes.find(d => d.owner === "[老罗]");
     nodes.filter(d => d !== rootData).forEach(child => {
       const p = findParentOrFallback(child);
@@ -404,6 +408,8 @@
         child.isHeightError = true;
       }
     });
+
+    // 构建树形数据结构
     function buildTreeData(node) {
       node._childrenData.forEach(ch => {
         ch._childrenData = buildTreeData(ch)._childrenData;
@@ -412,32 +418,41 @@
     }
     const fullTree = buildTreeData(rootData);
     const root = d3.hierarchy(fullTree, d => d._childrenData);
+
+    // 使用 d3.tree() 布局
     d3.tree().size([800, 800])(root);
+
+    // 根据高度设置 x/y 坐标（横向为高度 * 固定列宽）
     const COL_WIDTH = 140;
     root.each(n => {
       const h = parseInt(n.data.height, 10) || 0;
       n.y = h * COL_WIDTH;
     });
+
+    // 计算画布范围
     const allNodesArr = [];
     root.each(n => allNodesArr.push(n));
     const xMin = d3.min(allNodesArr, d => d.x);
     const xMax = d3.max(allNodesArr, d => d.x);
-    const yMin = d3.min(allNodesArr, d => d.y);
     const yMax = d3.max(allNodesArr, d => d.y);
     const marginLeft = 200, marginRight = 200, marginTop = 100, marginBottom = 100;
     let svgWidth = (yMax + marginRight + 100);
     let svgHeight = (xMax - xMin + marginTop + marginBottom + 50);
     if (svgWidth < 1200) svgWidth = 1200;
     if (svgHeight < 800) svgHeight = 800;
+
+    // 创建 SVG 画布
     const svg = d3.select("#treeContainer")
       .append("svg")
       .attr("width", svgWidth)
       .attr("height", svgHeight);
+
     svg.append("text")
       .attr("x", 10)
       .attr("y", 20)
       .style("font-size", "14px")
       .text("总区块数: " + nodes.length);
+
     Object.keys(heightMap).map(Number).sort((a, b) => a - b).forEach(col => {
       svg.append("text")
         .attr("x", col * COL_WIDTH + 100)
@@ -445,16 +460,38 @@
         .style("font-size", "14px")
         .text("Height= " + col);
     });
+
+    // Tooltip 处理
     const tooltip = d3.select(".tooltip");
+
+    // 分别生成连线组与节点组
     const gLinks = svg.append("g").attr("class", "linksGroup");
     const gNodes = svg.append("g").attr("class", "nodesGroup");
+
+    /**
+     * 节点颜色规则：
+     * - 存在 error：红色
+     * - 高度不匹配：橙色
+     * - 其余正常节点：steelblue（连线统一用 #ccc）
+     */
+    function getColor(d, isLink) {
+      if (d.error) return "red";
+      if (d.isHeightError) return "orange";
+      return isLink ? "#ccc" : "steelblue";
+    }
+
+    // 渲染图形更新函数
     function updateGraph() {
       const allNodes = [];
       root.each(n => allNodes.push(n));
       const visibleNodes = allNodes.filter(n => n.data.isVisible);
       const visibleLinks = root.links().filter(l => l.source.data.isVisible && l.target.data.isVisible);
+      
+      // 清除旧的连线与节点
       gLinks.selectAll("path.link").remove();
       gNodes.selectAll("g.node").remove();
+      
+      // 绘制连线
       const linkGen = d3.linkHorizontal()
         .x(d => d.y)
         .y(d => d.x);
@@ -466,6 +503,8 @@
         .attr("transform", "translate(100,50)")
         .attr("stroke", d => getColor(d.target.data, true))
         .attr("d", linkGen);
+      
+      // 绘制节点
       const nodeEnter = gNodes.selectAll("g.node")
         .data(visibleNodes)
         .enter()
@@ -484,26 +523,20 @@
           if (nd.isHeightError) {
             html += `<div style="color:orange;">(与父节点 height 不匹配)</div>`;
           }
-          // 先将 tooltip 暂时置于(0,0)以测量尺寸
           tooltip.style("left", 0)
                  .style("top", 0)
                  .style("visibility", "visible")
                  .html(html);
+          
           const tooltipNode = tooltip.node();
           const tooltipRect = tooltipNode.getBoundingClientRect();
-          const tipWidth = tooltipRect.width;
-          const tipHeight = tooltipRect.height;
-          
-          // 默认偏移 10px
           let left = e.pageX + 10;
           let top = e.pageY + 10;
-          // 若超出右边界，则向左偏移
-          if (left + tipWidth > window.innerWidth) {
-            left = e.pageX - tipWidth - 10;
+          if (left + tooltipRect.width > window.innerWidth) {
+            left = e.pageX - tooltipRect.width - 10;
           }
-          // 若超出下边界，则向上偏移
-          if (top + tipHeight > window.innerHeight) {
-            top = e.pageY - tipHeight - 10;
+          if (top + tooltipRect.height > window.innerHeight) {
+            top = e.pageY - tooltipRect.height - 10;
           }
           tooltip.style("left", left + "px")
                  .style("top", top + "px");
@@ -514,6 +547,18 @@
         .on("click", (e, d) => {
           showBlockInfo(d);
         });
+      
+      // 如果节点所有者为 [gym]，插入背景矩形进行区域高亮显示
+      nodeEnter.filter(d => d.data.owner === "[gym]")
+        .insert("rect", ":first-child")
+        .attr("x", -15)
+        .attr("y", -15)
+        .attr("width", 100)    // 可根据需要调整尺寸
+        .attr("height", 30)
+        .attr("fill", "lightblue")
+        .attr("opacity", 0.5);
+
+      // 绘制节点圆圈与文本
       nodeEnter.append("circle")
         .attr("r", 5)
         .attr("fill", d => getColor(d.data, false));
@@ -523,11 +568,8 @@
         .style("text-anchor", "start")
         .text(d => d.data.owner);
     }
-    function getColor(d, isLink) {
-      if (d.error) return "red";
-      if (d.isHeightError) return "orange";
-      return isLink ? "#ccc" : "steelblue";
-    }
+
+    // 按区块 id 顺序依次显示（replay 效果）
     const revealOrder = nodes.map(d => d.id).sort((a, b) => a - b);
     const INTERVAL_MS = 200;
     function replaySequence() {
@@ -546,8 +588,8 @@
       });
     }
     document.getElementById("replayBtn").addEventListener("click", replaySequence);
-    
-    // 信息面板 & 校验豁免逻辑
+
+    // 信息面板及豁免逻辑
     const parentRecordEl  = document.getElementById("parentRecord");
     const parentHashEl    = document.getElementById("parentHash");
     const childRecordEl   = document.getElementById("childRecord");
@@ -558,12 +600,10 @@
     closeModalBtn.addEventListener("click", () => {
       exemptModalEl.style.display = "none";
     });
-    
-    /** 用户点击某个节点时，显示区块信息并判断是否触发豁免处理 */
+
     function showBlockInfo(nodeDatum) {
       const nd = nodeDatum.data;
       const parentData = nodeDatum.parent ? nodeDatum.parent.data : null;
-      // 显示父区块信息
       if (parentData) {
         parentRecordEl.value = parentData.originalRecord;
         parentHashEl.textContent = parentData.hash;
@@ -571,34 +611,27 @@
         parentRecordEl.value = "(无父节点)";
         parentHashEl.textContent = "(无)";
       }
-      // 显示当前区块信息
       childRecordEl.value = nd.originalRecord;
-      // 恢复手动哈希计算区域遮罩（防止之前被遮挡）
+
       manualOverlayEl.style.display = "none";
       manualOverlayEl.innerHTML = `<span>点击此处查看哈希区</span>`;
       manualOverlayEl.style.pointerEvents = "auto";
-      
-      // 恢复整体信息面板的遮罩
+
       infoOverlayEl.style.display = "none";
       
-      // 如果当前区块为 [gym] 且无 error，则显示豁免模态并覆盖整个信息面板
       if (nd.owner === "[gym]" && !nd.error) {
         exemptModalEl.style.display = "flex";
         infoOverlayEl.style.display = "block";
         infoOverlayEl.innerHTML = "";
       }
     }
-    
-    // 点击 infoOverlay 可解除对整个信息面板的遮挡
     infoOverlayEl.addEventListener("click", () => {
       infoOverlayEl.style.display = "none";
     });
-    
-    // 点击手动遮罩解除手动哈希计算区的遮挡
     manualOverlayEl.addEventListener("click", () => {
       manualOverlayEl.style.display = "none";
     });
-    
+
     // 手动哈希计算功能
     document.getElementById("btnComputeHash").addEventListener("click", async () => {
       const txt = document.getElementById("manualInput").value;
@@ -616,8 +649,8 @@
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
       return hashHex;
     }
-    
-    // 初次加载时显示图形
+
+    // 初次加载渲染图形
     updateGraph();
   </script>
 </body>
