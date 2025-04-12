@@ -437,7 +437,7 @@
       .attr("x", 10)
       .attr("y", 20)
       .style("font-size", "14px")
-      .text("总节点数: " + nodes.length);
+      .text("总区块数: " + nodes.length);
     Object.keys(heightMap).map(Number).sort((a, b) => a - b).forEach(col => {
       svg.append("text")
         .attr("x", col * COL_WIDTH + 100)
