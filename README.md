@@ -1,2 +1,2 @@
-# Blockchain-and-Cryptocurrency
+# Blockchain Visualization
 Coursework Projects
