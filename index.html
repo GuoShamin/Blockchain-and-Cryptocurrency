@@ -258,7 +258,7 @@
       <span style="color:red;">红色</span>：哈希值不匹配<br/>
       <span style="color:orange;">橙色</span>：与父区块 height 不匹配<br/>
       <span style="color:steelblue;">蓝色</span>：正常区块<br/>
-      <span style="background:lightblue;">&nbsp;&nbsp;&nbsp;</span>：作者[gym]的区块
+      <span style="background:lightblue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>：作者的区块
     </div>
     <div class="tooltip"></div>
   </div>
@@ -560,12 +560,12 @@
           showBlockInfo(d);
         });
       
-      // 如果区块所有者为 [gym]，插入背景矩形进行区域高亮显示
-      nodeEnter.filter(d => d.data.owner === "[gym]")
+      // 如果区块所有者为作者，插入背景矩形进行区域高亮显示
+      nodeEnter.filter(d => d.data.owner === "[2]")
         .insert("rect", ":first-child")
         .attr("x", -15)
         .attr("y", -15)
-        .attr("width", 100)    // 可根据需要调整尺寸
+        .attr("width", 50)    // 可根据需要调整尺寸
         .attr("height", 30)
         .attr("fill", "lightblue")
         .attr("opacity", 0.5);
@@ -631,7 +631,7 @@
 
       infoOverlayEl.style.display = "none";
       
-      if (nd.owner === "[gym]" && !nd.error) {
+      if (nd.owner === "[2]" && !nd.error) {
         exemptModalEl.style.display = "flex";
         infoOverlayEl.style.display = "block";
         infoOverlayEl.innerHTML = "";
